@@ -607,6 +607,30 @@ const getReportUserCount = (source = {}) =>
     )
   );
 
+const getReportInvoiceCount = (source = {}) =>
+  toNumber(
+    pick(
+      source,
+      [
+        "invoiceCount",
+        "InvoiceCount",
+        "invoices",
+        "Invoices",
+        "billingCount",
+        "BillingCount",
+        "billCount",
+        "BillCount",
+        "totalInvoices",
+        "TotalInvoices",
+        "totalInvoiceCount",
+        "TotalInvoiceCount",
+        "generatedInvoices",
+        "GeneratedInvoices",
+      ],
+      0
+    )
+  );
+
 export const normalizeReportRow = (row = {}, index = 0) => ({
   id: pick(row, ["id", "Id", "clinicId", "ClinicId", "hospitalId", "HospitalId", "_id"], index),
   name: pick(row, ["name", "Name", "clinic", "Clinic", "clinicName", "ClinicName", "hospitalName", "HospitalName", "label"], `Report ${index + 1}`),
@@ -614,7 +638,7 @@ export const normalizeReportRow = (row = {}, index = 0) => ({
   adminEmail: getReportAdminEmail(row),
   revenue: toNumber(pick(row, ["revenue", "Revenue", "totalRevenue", "TotalRevenue", "amount", "Amount"], 0)),
   users: getReportUserCount(row),
-  invoiceCount: toNumber(pick(row, ["invoiceCount", "InvoiceCount", "invoices", "Invoices", "billingCount", "BillingCount"], 0)),
+  invoiceCount: getReportInvoiceCount(row),
   status: normalizeStatus(pick(row, ["status", "Status", "isActive", "IsActive", "active", "Active"], "Active")),
 });
 
@@ -688,6 +712,13 @@ const addUserCountValue = (lookup, key) => {
   }
 };
 
+const addLookupCountValue = (lookup, key) => {
+  const normalizedKey = normalizeLookupKey(key);
+  if (normalizedKey) {
+    lookup.set(normalizedKey, (lookup.get(normalizedKey) || 0) + 1);
+  }
+};
+
 const buildClinicUserCountLookup = (userRows = []) => {
   const lookup = new Map();
 
@@ -712,7 +743,45 @@ const buildClinicUserCountLookup = (userRows = []) => {
   return lookup;
 };
 
+const buildClinicInvoiceCountLookup = (billingRows = []) => {
+  const lookup = new Map();
+
+  billingRows.forEach((item) => {
+    const keys = new Set(
+      [
+        getBillingClinicId(item),
+        getBillingClinicName(item),
+        pick(item, ["clinicName", "ClinicName", "hospitalName", "HospitalName", "assignedClinic", "AssignedClinic"], ""),
+      ]
+        .map((value) => normalizeLookupKey(value))
+        .filter(Boolean)
+    );
+
+    keys.forEach((key) => addLookupCountValue(lookup, key));
+  });
+
+  return lookup;
+};
+
 const getClinicUserCount = (rawRow = {}, normalizedRow = {}, clinic = {}, lookup = new Map()) => {
+  const keys = [
+    getReportClinicId(rawRow),
+    clinic.id,
+    normalizedRow.id,
+    getReportClinicName(rawRow),
+    clinic.name,
+    normalizedRow.name,
+  ];
+
+  for (const key of keys) {
+    const count = lookup.get(normalizeLookupKey(key));
+    if (count !== undefined) return count;
+  }
+
+  return 0;
+};
+
+const getClinicInvoiceCount = (rawRow = {}, normalizedRow = {}, clinic = {}, lookup = new Map()) => {
   const keys = [
     getReportClinicId(rawRow),
     clinic.id,
@@ -776,9 +845,10 @@ const findReportClinic = (rawRow = {}, normalizedRow = {}, lookups = {}) => {
   );
 };
 
-const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [], userRows = [] }) => {
+const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [], userRows = [], billingRows = [] }) => {
   const lookups = buildAdminLookups({ clinicRows, adminRows });
   const userCountLookup = buildClinicUserCountLookup(userRows);
+  const invoiceCountLookup = buildClinicInvoiceCountLookup(billingRows);
 
   return rows.map((row, index) => {
     const normalizedRow = normalizeReportRow(row, index);
@@ -789,12 +859,17 @@ const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [], userRows
       toNumber(pick(clinic, ["users"], 0)),
       getClinicUserCount(row, normalizedRow, clinic, userCountLookup)
     );
+    const invoiceCount = Math.max(
+      normalizedRow.invoiceCount,
+      getClinicInvoiceCount(row, normalizedRow, clinic, invoiceCountLookup)
+    );
 
     return {
       ...normalizedRow,
       adminName: normalizedRow.adminName || admin.name || "",
       adminEmail: normalizedRow.adminEmail || admin.email || "",
       users,
+      invoiceCount,
     };
   });
 };
@@ -805,6 +880,7 @@ const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = 
     adminRows,
   });
   const userCountLookup = buildClinicUserCountLookup(userRows);
+  const invoiceCountLookup = buildClinicInvoiceCountLookup(billingRows);
 
   const rows = new Map();
 
@@ -871,7 +947,7 @@ const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = 
           toNumber(pick(clinic, ["users"], 0)),
           getClinicUserCount({ clinicName: name, clinicId: clinic.id }, { id, name }, clinic, userCountLookup)
         ),
-        invoiceCount: 0,
+        invoiceCount: getClinicInvoiceCount({ clinicName: name, clinicId: clinic.id }, { id, name }, clinic, invoiceCountLookup),
         status: clinic.status || admin.status || "Active",
       });
     });
@@ -1722,9 +1798,9 @@ export const fetchReports = async () => {
   const adminRows = admins.status === "fulfilled" ? asArray(admins.value) : [];
   const userRows = users.status === "fulfilled" ? asArray(users.value) : [];
   const rows = topClinicRows.length
-    ? enrichReportRows({ rows: topClinicRows, clinicRows, adminRows, userRows })
+    ? enrichReportRows({ rows: topClinicRows, clinicRows, adminRows, userRows, billingRows })
     : revenueRows.length
-      ? enrichReportRows({ rows: revenueRows, clinicRows, adminRows, userRows })
+      ? enrichReportRows({ rows: revenueRows, clinicRows, adminRows, userRows, billingRows })
     : buildAdminRevenueRows({ billingRows, clinicRows, adminRows, userRows });
 
   return {

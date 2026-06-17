@@ -63,7 +63,14 @@ function Reports() {
       label: "Total Revenue",
       render: (clinic) => formatIndianCurrency(clinic.revenue),
     },
-    { key: "invoiceCount", label: "Invoices" },
+    {
+      key: "invoiceCount",
+      label: "Invoices",
+      render: (clinic) =>
+        clinic.invoiceCount !== undefined && clinic.invoiceCount !== null && clinic.invoiceCount !== ""
+          ? Number(clinic.invoiceCount).toLocaleString("en-IN")
+          : "-",
+    },
     {
       key: "users",
       label: "Users",

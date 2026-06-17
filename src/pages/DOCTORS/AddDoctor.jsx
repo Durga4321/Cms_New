@@ -450,6 +450,9 @@ function AddDoctor() {
 
     if (["experience", "fees"].includes(name)) {
       value = onlyNumberValue(value);
+      if (name === "experience") {
+        value = value.slice(0, 2);
+      }
     }
 
     setForm((previous) => ({
@@ -486,6 +489,7 @@ function AddDoctor() {
       qualification: validateRequired(form.qualification, "Qualification"),
       experience: validateNumeric(form.experience, "Experience", {
         integer: true,
+        max: 99,
       }),
       fees: validateNumeric(form.fees, "Fees"),
       email: validateGmail(form.email),
@@ -615,6 +619,8 @@ function AddDoctor() {
                 name="experience"
                 type="number"
                 min="0"
+                max="99"
+                step="1"
                 value={form.experience}
                 onChange={handleChange}
                 className={fieldErrors.experience ? "is-invalid" : ""}
