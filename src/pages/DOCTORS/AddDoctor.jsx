@@ -221,10 +221,6 @@ import { apiUrl } from "../../config/api";
 import { useToast } from "../../components/ToastProvider";
 import { getClinicDisplayName } from "../../utils/clinicDisplay";
 import {
-  canUsePermission,
-  fetchAndStoreRolePermissions,
-} from "../../utils/authorization";
-import {
   onlyAlpha,
   onlyIndianMobileValue,
   onlyNumberValue,
@@ -234,7 +230,10 @@ import {
   validateNumeric,
   validateRequired,
 } from "../../utils/validation";
-
+import {
+  canUsePermission,
+  fetchAndStoreRolePermissions,
+} from "../../utils/authorization";
 const DOCTORS_API_URL =
   apiUrl("Doctor");
 
