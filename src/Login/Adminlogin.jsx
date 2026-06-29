@@ -134,13 +134,7 @@ const getLoginIp = async (authData, claims) => {
 
   if (expectedIp) return expectedIp;
 
-  try {
-    const response = await fetch('https://api.ipify.org?format=json');
-    const data = await response.json();
-    return getFirstText(data.ip, data?.IPAddress, data?.clientIp);
-  } catch {
-    return '';
-  }
+  return '';
 };
 
 const normalizeRole = (role) =>
