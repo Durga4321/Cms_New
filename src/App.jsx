@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layout/AppLayout";
 import DoctorApp from "./doctors/DoctorApp";
 import ReceptionistApp from "./Recepitionist/ReceptionistApp";
+import PatientApp from "./patients/PatientApp";
 import UserProfilePage from "./profile/UserProfilePage";
 import SuperAdminDashboard from "./pages/SUPERADMIN/Dashboard/Dashboard";
 import SuperAdminClinics from "./pages/SUPERADMIN/Clinics/Clinics";
@@ -28,6 +29,9 @@ import AddDoctor from "./pages/DOCTORS/AddDoctor";
 import DoctorSchedule from "./pages/DOCTORS/DoctorSchedule";
 import Patients from "./pages/PATIENTS/Patients";
 import PatientDetails from "./pages/PATIENTS/PatientDetails";
+import PatientDashboard from "./pages/PATIENTS/PatientDashboard";
+import PatientDashboardDemo from "./pages/PATIENTS/PatientDashboardDemo";
+import PatientRegister from "./pages/PATIENTS/PatientRegister";
 // Optional
 import Appointments from "./pages/APPOINTMENTS/Appointments";
 import NewAppointment from "./pages/APPOINTMENTS/NewAppointment";
@@ -62,6 +66,10 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/VerifyOTP" element={<VerifyOTP />} />
         <Route path="/ResetPassword" element={<ResetPassword />} />
+        <Route path="/patients/register" element={<PatientRegister />} />
+
+        {/* DEMO ROUTES (No Auth Required) */}
+        <Route path="/demo/patient-dashboard" element={<PatientDashboardDemo />} />
 
 
 
@@ -82,7 +90,8 @@ function App() {
           <Route path="receptionists" element={<Receptionists />} />
 
           <Route path="patients" element={<Patients />} />
-          <Route path="patients/:id" element={<PatientDetails />} />
+          <Route path="patients/dashboard" element={<PatientDashboard />} />
+          <Route path="patients/:id" element={<PatientDetails />} /> {/* ✅ IMPORTANT */}
 
           <Route path="appointments" element={<Appointments />} />
           <Route path="appointments/new" element={<NewAppointment />} />
@@ -116,6 +125,7 @@ function App() {
         {/* ── SEPARATE DOCTOR DASHBOARD ── */}
         <Route path="/doctor/*" element={<DoctorApp />} />
         <Route path="/reception/*" element={<ReceptionistApp />} />
+        <Route path="/patient/*" element={<PatientApp />} />
 
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
