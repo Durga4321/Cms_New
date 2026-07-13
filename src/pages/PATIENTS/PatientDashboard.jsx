@@ -77,7 +77,14 @@ const getAppointmentTime = (appointment = {}) =>
   firstValue((appointment || {}).time, (appointment || {}).slot, (appointment || {}).timeRange, (appointment || {}).scheduleTime, (appointment || {}).startTime, (appointment || {}).endTime);
 
 const getDoctorName = (appointment = {}) =>
-  firstValue((appointment || {}).doctorName, (appointment || {}).doctor?.name, (appointment || {}).doctor?.fullName, (appointment || {}).practitionerName, (appointment || {}).providerName);
+  firstValue(
+    typeof (appointment || {}).doctor === "string" ? (appointment || {}).doctor : undefined,
+    (appointment || {}).doctorName,
+    (appointment || {}).doctor?.name,
+    (appointment || {}).doctor?.fullName,
+    (appointment || {}).practitionerName,
+    (appointment || {}).providerName
+  );
 
 const getSpecialization = (appointment = {}) =>
   firstValue((appointment || {}).specialization, (appointment || {}).department, (appointment || {}).speciality, (appointment || {}).specialty, (appointment || {}).doctor?.specialization);
@@ -86,7 +93,7 @@ const getClinicName = (appointment = {}) =>
   firstValue((appointment || {}).clinic, (appointment || {}).clinicName, (appointment || {}).hospitalName, (appointment || {}).departmentName);
 
 const getLocation = (appointment = {}) =>
-  firstValue((appointment || {}).location, (appointment || {}).room, (appointment || {}).branch, (appointment || {}).site, (appointment || {}).clinicAddress);
+  firstValue((appointment || {}).location, (appointment || {}).room, (appointment || {}).branch, (appointment || {}).site, (appointment || {}).clinicAddress, getClinicName(appointment));
 
 const getAppointmentAvatar = (appointment = {}) => {
   const doctorName = String(getDoctorName(appointment) || "").trim();
@@ -190,8 +197,12 @@ function PatientDashboard({ patient, visits = EMPTY_ARRAY, prescriptions = EMPTY
     navigate("/patient/medical-history");
   };
 
-  const handleReschedule = () => {
+  const handleViewAppointmentDetails = () => {
     navigate("/patient/appointments");
+  };
+
+  const handleReschedule = () => {
+    navigate("/patient/appointments/book");
   };
 
   const handleViewAllNotifications = () => {
@@ -205,7 +216,6 @@ function PatientDashboard({ patient, visits = EMPTY_ARRAY, prescriptions = EMPTY
       note: hasAppointment ? [appointmentDate, appointmentTime].filter(Boolean).join(" at ") : "No upcoming appointment",
       icon: Clock,
       tone: "teal",
-      route: "/patient/appointments/book",
     },
     {
       label: "Previous Appointments",
@@ -221,15 +231,6 @@ function PatientDashboard({ patient, visits = EMPTY_ARRAY, prescriptions = EMPTY
       note: "Available to download",
       icon: Pill,
       tone: "amber",
-      route: "/patient/prescriptions",
-    },
-    {
-      label: "Medical Records",
-      value: formatCount(medicalRecordCount),
-      note: "Reports and visit history",
-      icon: FileText,
-      tone: "blue",
-      route: "/patient/medical-history",
     },
     {
       label: "Bills Pending",
@@ -251,7 +252,11 @@ function PatientDashboard({ patient, visits = EMPTY_ARRAY, prescriptions = EMPTY
         <div className="pd-header-actions">
           <button type="button" className="pd-header-btn pd-header-btn--primary" onClick={handleBookAppointment}>
             <Calendar size={16} />
-            Book Appointment
+            Book appointment
+          </button>
+          <button type="button" className="pd-header-btn" onClick={handleViewDetails}>
+            <FileText size={16} />
+            View records
           </button>
         </div>
       </div>
@@ -307,7 +312,7 @@ function PatientDashboard({ patient, visits = EMPTY_ARRAY, prescriptions = EMPTY
                 </div>
 
                 <div className="pd-appointment-actions">
-                  <button type="button" className="pd-action-btn pd-action-btn--primary" onClick={handleViewDetails}>
+                  <button type="button" className="pd-action-btn pd-action-btn--primary" onClick={handleViewAppointmentDetails}>
                     View details
                   </button>
                   <button type="button" className="pd-action-btn" onClick={handleReschedule}>
@@ -397,7 +402,7 @@ function PatientDashboard({ patient, visits = EMPTY_ARRAY, prescriptions = EMPTY
               <Calendar size={22} />
               <span>Book Appointment</span>
             </button>
-            <button type="button" className="pd-action-tile" onClick={handleViewDetails}>
+            <button type="button" className="pd-action-tile" onClick={handleViewRecords}>
               <FileText size={22} />
               <span>View Reports</span>
             </button>
